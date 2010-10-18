@@ -1174,6 +1174,9 @@ void Unit::CastCustomSpell(Unit* Victim, SpellEntry const *spellInfo, int32 cons
             sLog.outError("CastCustomSpell: unknown spell by caster: %s", GetObjectGuid().GetString().c_str());
         return;
     }
+	
+	if(sObjectMgr.IsSpellDisabled(spellInfo->Id))
+        return;
 
     if (castItem)
         DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "WORLD: cast Item spellId - %i", spellInfo->Id);
