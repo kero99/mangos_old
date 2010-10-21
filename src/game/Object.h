@@ -497,6 +497,7 @@ class MANGOS_DLL_SPEC WorldObject : public Object
 
         GameObject* SummonGameobject(uint32 id, float x, float y, float z, float angle, uint32 despwtime);
 
+        void StartGroupLoot(Group* group, uint32 timer);
 		void StopGroupLoot();
         ObjectGuid GetLootRecipientGuid() const { return m_lootRecipientGuid; }
         uint32 GetLootGroupRecipientId() const { return m_lootGroupRecipientId; }
