@@ -1422,10 +1422,11 @@ class MANGOS_DLL_SPEC Player : public Unit
         void RewardQuest( Quest const *pQuest, uint32 reward, Object* questGiver, bool announce = true );
 
         void FailQuest( uint32 quest_id );
-        bool SatisfyQuestSkillOrClass( Quest const* qInfo, bool msg ) const;
+        bool SatisfyQuestSkill(Quest const* qInfo, bool msg) const;
         bool SatisfyQuestLevel( Quest const* qInfo, bool msg ) const;
         bool SatisfyQuestLog( bool msg ) const;
         bool SatisfyQuestPreviousQuest( Quest const* qInfo, bool msg ) const;
+        bool SatisfyQuestClass(Quest const* qInfo, bool msg) const;
         bool SatisfyQuestRace( Quest const* qInfo, bool msg ) const;
         bool SatisfyQuestReputation( Quest const* qInfo, bool msg ) const;
         bool SatisfyQuestStatus( Quest const* qInfo, bool msg ) const;
@@ -1579,8 +1580,8 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         QuestStatusMap& getQuestStatusMap() { return mQuestStatus; };
 
-        const uint64& GetSelection( ) const { return m_curSelection; }
-        void SetSelection(const uint64 &guid) { m_curSelection = guid; SetTargetGUID(guid); }
+        ObjectGuid const& GetSelectionGuid( ) const { return m_curSelectionGuid; }
+        void SetSelectionGuid(ObjectGuid guid) { m_curSelectionGuid = guid; SetTargetGuid(guid); }
 
         uint8 GetComboPoints() { return m_comboPoints; }
         const uint64& GetComboTarget() const { return m_comboTarget; }
@@ -2400,6 +2401,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         AchievementMgr const& GetAchievementMgr() const { return m_achievementMgr; }
         AchievementMgr& GetAchievementMgr() { return m_achievementMgr; }
         void UpdateAchievementCriteria(AchievementCriteriaTypes type, uint32 miscvalue1=0, uint32 miscvalue2=0, Unit *unit=NULL, uint32 time=0);
+        void CompletedAchievement(AchievementEntry const* entry);
+        void CompletedAchievement(uint32 uiAchievementID);
         void StartTimedAchievementCriteria(AchievementCriteriaTypes type, uint32 timedRequirementId, time_t startTime = 0);
 
 
@@ -2523,7 +2526,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool m_itemUpdateQueueBlocked;
 
         uint32 m_ExtraFlags;
-        uint64 m_curSelection;
+        ObjectGuid m_curSelectionGuid;
 
         uint64 m_comboTarget;
         int8 m_comboPoints;

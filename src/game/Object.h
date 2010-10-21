@@ -42,8 +42,6 @@
 
 #define MAX_STEALTH_DETECT_RANGE    45.0f
 
-uint32 GuidHigh2TypeId(uint32 guid_hi);
-
 enum TempSummonType
 {
     TEMPSUMMON_TIMED_OR_DEAD_DESPAWN       = 1,             // despawns after a specified time OR when the creature disappears
@@ -66,6 +64,7 @@ class WorldPacket;
 class UpdateData;
 class WorldSession;
 class Creature;
+class GameObject;
 class Player;
 class Group;
 class Unit;
@@ -496,8 +495,9 @@ class MANGOS_DLL_SPEC WorldObject : public Object
 
         Creature* SummonCreature(uint32 id, float x, float y, float z, float ang,TempSummonType spwtype,uint32 despwtime, bool asActiveObject = false);
 
-        void StartGroupLoot(Group* group, uint32 timer);
-        void StopGroupLoot();
+        GameObject* SummonGameobject(uint32 id, float x, float y, float z, float angle, uint32 despwtime);
+
+		void StopGroupLoot();
         ObjectGuid GetLootRecipientGuid() const { return m_lootRecipientGuid; }
         uint32 GetLootGroupRecipientId() const { return m_lootGroupRecipientId; }
         Player* GetLootRecipient() const;                   // use group cases as prefered
