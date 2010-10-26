@@ -4389,9 +4389,18 @@ void Aura::HandleAuraModIncreaseFlightSpeed(bool apply, bool Real)
     {
         WorldPacket data;
         if(apply)
+        {
+            if (target->GetTypeId()==TYPEID_PLAYER)
+                ((Player*)target)->SetCanFly(true);
             data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
+        }
         else
+        {
             data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
+            if (target->GetTypeId()==TYPEID_PLAYER)
+                ((Player*)target)->SetCanFly(false);
+        }
+        //data.append(target->GetPackGUID());
         data << target->GetPackGUID();
         data << uint32(0);                                      // unknown
         target->SendMessageToSet(&data, true);
@@ -6327,9 +6336,17 @@ void Aura::HandleAuraAllowFlight(bool apply, bool Real)
     // allow fly
     WorldPacket data;
     if(apply)
+    {
+        if (GetTarget()->GetTypeId()==TYPEID_PLAYER)
+            ((Player*)GetTarget())->SetCanFly(true);
         data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
+    }
     else
+    {
         data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
+        if (GetTarget()->GetTypeId()==TYPEID_PLAYER)
+            ((Player*)GetTarget())->SetCanFly(false);
+    }
     data << GetTarget()->GetPackGUID();
     data << uint32(0);                                      // unk
     GetTarget()->SendMessageToSet(&data, true);
@@ -6421,8 +6438,8 @@ void Aura::HandleAuraRetainComboPoints(bool apply, bool Real)
 
     // combo points was added in SPELL_EFFECT_ADD_COMBO_POINTS handler
     // remove only if aura expire by time (in case combo points amount change aura removed without combo points lost)
-    if( !apply && m_removeMode == AURA_REMOVE_BY_EXPIRE && target->GetComboTarget())
-        if(Unit* unit = ObjectAccessor::GetUnit(*GetTarget(),target->GetComboTarget()))
+    if (!apply && m_removeMode == AURA_REMOVE_BY_EXPIRE && !target->GetComboTargetGuid().IsEmpty())
+        if (Unit* unit = ObjectAccessor::GetUnit(*GetTarget(),target->GetComboTargetGuid()))
             target->AddComboPoints(unit, -m_modifier.m_amount);
 }
 
@@ -6600,6 +6617,26 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                             break;
                     }
                 }
+            }
+        }
+        else if (caster && caster->GetTypeId() == TYPEID_PLAYER && spellProto->Id == 47788 && 
+            m_removeMode == AURA_REMOVE_BY_EXPIRE)
+        {
+            Player* plr = (Player*)caster;
+            if (Aura *aur = plr->GetAura(63231, EFFECT_INDEX_0))
+            {
+                int32 base_time = aur->GetSpellProto()->CalculateSimpleValue(EFFECT_INDEX_0);
+                int32 end_time = -(plr->GetSpellCooldownDelay(spellProto->Id) - base_time);
+
+                // start new cooldown at server side
+                plr->AddSpellCooldown(spellProto->Id, 0, time_t(NULL) + time_t(base_time));
+
+                // Send activate cooldown timer (possible 0) at client side
+                WorldPacket data(SMSG_MODIFY_COOLDOWN, (4+8+4));
+                data << spellProto->Id;
+                data << plr->GetGUID();
+                data << end_time*IN_MILLISECONDS;
+                plr->SendDirectMessage(&data);
             }
         }
     }
