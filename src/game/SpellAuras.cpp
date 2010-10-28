@@ -6697,7 +6697,23 @@ void Aura::PeriodicTick()
                         }
                         break;
                     }
-                    case 70541:
+                    case 67297:
+                    case 65950:
+                        pCaster->CastSpell(target, 65951, true);
+                        break;
+                    case 66001:
+                    case 67282:
+                        pCaster->CastSpell(target, 66002, true);
+                        break;
+                    case 67281:
+                    case 67283:
+                        pCaster->CastSpell(target, 66000, true);
+                        break;
+                    case 67296:
+                    case 67298:
+                        pCaster->CastSpell(target, 65952, true);
+                        break;
+					case 70541:
                     case 73779:
                     case 73780:
                     case 73781:
