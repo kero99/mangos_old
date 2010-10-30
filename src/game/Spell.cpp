@@ -858,7 +858,7 @@ void Spell::AddUnitTarget(Unit* pVictim, SpellEffectIndex effIndex)
     ObjectGuid targetGUID = pVictim->GetObjectGuid();
 
     // Lookup target in already in list
-    for((tbb::concurrent_vector<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
+    for(tbb::concurrent_vector<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
     {
 		if (ihit->deleted == true)
 			continue;
@@ -4076,7 +4076,7 @@ void Spell::SendChannelStart(uint32 duration)
     {
         for(tbb::concurrent_vector<GOTargetInfo>::const_iterator itr = m_UniqueGOTargetInfo.begin(); itr != m_UniqueGOTargetInfo.end(); ++itr)
         {
-			if (ihit->deleted == true)
+			if (itr->deleted == true)
 				continue;
 
             if (itr->effectMask & (1 << EFFECT_INDEX_0))
@@ -5812,6 +5812,7 @@ bool Spell::CanAutoCast(Unit* target)
 
 			if( ihit->targetGUID == targetguid )
                 return true;
+        }
     }
     return false;                                           //target invalid
 }
