@@ -241,7 +241,9 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     recv_data >> movementInfo;
     /*----------------*/
 
-    if (!VerifyMovementInfo(movementInfo, guid))
+	if (!plMover) return;
+
+    if (!VerifyMovementInfo(movementInfo,guid))
         return;
 
     // fall damage generation (ignore in flight case that can be triggered also at lags in moment teleportation to another map).
