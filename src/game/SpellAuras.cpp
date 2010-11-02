@@ -7575,7 +7575,7 @@ void Aura::PeriodicDummyTick()
 
 					for(GuardianPetList::const_iterator itr = guardians.begin(); itr != guardians.end(); ++itr)
 						if(Unit* unit = ObjectAccessor::GetUnit(*caster, *itr))
-							if(unit->GetOwnerGUID()==caster->GetGUID() && unit->GetEntry()==31216)	
+							if(unit->GetOwnerGuid() == caster->GetObjectGuid() && unit->GetEntry()==31216)
 							{					
 								caster->CastSpell(unit, 45204, true);			                		
 								caster->CastSpell(unit, 69837, true);

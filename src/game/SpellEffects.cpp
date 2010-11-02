@@ -4413,7 +4413,7 @@ void Spell::EffectSummonPossessed(SpellEffectIndex eff_idx)
 
     summon->addUnitState(UNIT_STAT_CONTROLLED);
     summon->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
-    summon->SetCharmerGUID(m_caster->GetGUID());
+    summon->SetCharmerGuid(m_caster->GetObjectGuid());
     summon->setFaction(m_caster->getFaction());
 
     ((Player*)m_caster)->GetCamera().SetView(summon);
@@ -4746,7 +4746,7 @@ void Spell::DoSummonWild(SpellEffectIndex eff_idx, uint32 forceFaction)
         {
             summon->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
             summon->SetCreatorGuid(m_caster->GetObjectGuid());
-			summon->SetOwnerGUID(m_caster->GetGUID());
+			summon->SetOwnerGuid(m_caster->GetObjectGuid());
 
             if(forceFaction)
                 summon->setFaction(forceFaction);
@@ -4842,7 +4842,7 @@ void Spell::DoSummonGuardian(SpellEffectIndex eff_idx, uint32 forceFaction)
         else
             spawnCreature->setPowerType(POWER_MANA);
 
-        spawnCreature->SetOwnerGUID(m_caster->GetObjectGUID());
+        spawnCreature->SetOwnerGuid(m_caster->GetObjectGuid());
         spawnCreature->SetUInt32Value(UNIT_NPC_FLAGS, spawnCreature->GetCreatureInfo()->npcflag);
         spawnCreature->setFaction(forceFaction ? forceFaction : m_caster->getFaction());
         spawnCreature->SetUInt32Value(UNIT_FIELD_FLAGS, 0);
@@ -6451,7 +6451,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     if(!target || target->GetTypeId() != TYPEID_PLAYER)
                         return;
 
-                    m_caster->SetCharmerGUID(0);
+                    m_caster->SetCharmerGuid(ObjectGuid());
                     target->RemoveAurasDueToSpell(51852);
                     target->SetCharm(NULL);
 
