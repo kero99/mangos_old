@@ -217,6 +217,9 @@ void SpellCastTargets::Update(Unit* caster)
 
 void SpellCastTargets::read( ByteBuffer& data, Unit *caster )
 {
+    if (!caster)
+        return;
+
     data >> m_targetMask;
 
     if(m_targetMask == TARGET_FLAG_SELF)
