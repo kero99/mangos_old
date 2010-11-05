@@ -362,7 +362,7 @@ void WorldSession::HandleMoveNotActiveMoverOpcode(WorldPacket &recv_data)
     recv_data >> old_mover_guid.ReadAsPacked();
     recv_data >> mi;
 
-    /*if(_player->GetMover()->GetObjectGuid() == old_mover_guid)
+    if(_player->GetMover()->GetObjectGuid() == old_mover_guid)
     {
         sLog.outError("HandleMoveNotActiveMover: incorrect mover guid: mover is %s and should be %s instead of %s",
             _player->GetMover()->GetObjectGuid().GetString().c_str(),
@@ -370,7 +370,7 @@ void WorldSession::HandleMoveNotActiveMoverOpcode(WorldPacket &recv_data)
             old_mover_guid.GetString().c_str());
         recv_data.rpos(recv_data.wpos());                   // prevent warnings spam
         return;
-    }*/
+    }
 
     _player->m_movementInfo = mi;
 }
