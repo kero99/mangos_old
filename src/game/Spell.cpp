@@ -6028,6 +6028,8 @@ SpellCastResult Spell::CheckItems()
         return SPELL_CAST_OK;
 
     Player* p_caster = (Player*)m_caster;
+    bool isScrollItem = false;
+    bool isVellumTarget = false;
 
     // cast item checks
     if(m_CastItem)
@@ -6042,6 +6044,9 @@ SpellCastResult Spell::CheckItems()
         ItemPrototype const *proto = m_CastItem->GetProto();
         if(!proto)
             return SPELL_FAILED_ITEM_NOT_FOUND;
+
+        if (proto->Flags & ITEM_FLAG_ENCHANT_SCROLL)
+            isScrollItem = true;
 
         for (int i = 0; i < 5; ++i)
             if (proto->Spells[i].SpellCharges)
@@ -6114,6 +6119,11 @@ SpellCastResult Spell::CheckItems()
         if(!m_targets.getItemTarget()->IsFitToSpellRequirements(m_spellInfo))
             return m_IsTriggeredSpell  && !(m_targets.m_targetMask & TARGET_FLAG_TRADE_ITEM)
                 ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_EQUIPPED_ITEM_CLASS;
+
+        isVellumTarget = m_targets.getItemTarget()->GetProto()->IsVellum();
+        // Do not enchant vellum with scroll
+        if (isVellumTarget && isScrollItem)
+            return SPELL_FAILED_BAD_TARGETS;
     }
     // if not item target then required item must be equipped (for triggered case not report error)
     else
@@ -6266,6 +6276,17 @@ SpellCastResult Spell::CheckItems()
 
                 if( targetItem->GetProto()->ItemLevel < m_spellInfo->baseLevel )
                     return SPELL_FAILED_LOWLEVEL;
+                // Check if we can store a new scroll, enchanting vellum has implicit SPELL_EFFECT_CREATE_ITEM
+                if (isVellumTarget && m_spellInfo->EffectItemType[i])
+                {
+                    ItemPosCountVec dest;
+                    uint8 msg = p_caster->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, m_spellInfo->EffectItemType[i], 1);
+                    if (msg != EQUIP_ERR_OK)
+                    {
+                        p_caster->SendEquipError(msg, NULL, NULL);
+                        return SPELL_FAILED_DONT_REPORT;
+                    }
+                }
                 // Not allow enchant in trade slot for some enchant type
                 if( targetItem->GetOwner() != m_caster )
                 {
@@ -6275,6 +6296,9 @@ SpellCastResult Spell::CheckItems()
                         return SPELL_FAILED_ERROR;
                     if (pEnchant->slot & ENCHANTMENT_CAN_SOULBOUND)
                         return SPELL_FAILED_NOT_TRADEABLE;
+                    // cannot replace vellum with scroll in trade slot
+                    if (isVellumTarget)
+                        return SPELL_FAILED_BAD_TARGETS;
                 }
                 break;
             }
@@ -6921,15 +6945,8 @@ SpellCastResult Spell::CanOpenLock(SpellEffectIndex effIndex, uint32 lockId, Ski
  */
 void Spell::FillAreaTargets(UnitList &targetUnitMap, float x, float y, float radius, SpellNotifyPushType pushType, SpellTargets spellTargets, WorldObject* originalCaster /*=NULL*/)
 {
-    CellPair p(MaNGOS::ComputeCellPair(x, y));
-    Cell cell(p);
-    cell.data.Part.reserved = ALL_DISTRICT;
-    cell.SetNoCreate();
     MaNGOS::SpellNotifierCreatureAndPlayer notifier(*this, targetUnitMap, radius, pushType, spellTargets, originalCaster);
-    TypeContainerVisitor<MaNGOS::SpellNotifierCreatureAndPlayer, WorldTypeMapContainer > world_notifier(notifier);
-    TypeContainerVisitor<MaNGOS::SpellNotifierCreatureAndPlayer, GridTypeMapContainer > grid_notifier(notifier);
-    cell.Visit(p, world_notifier, *m_caster->GetMap(), *m_caster, radius);
-    cell.Visit(p, grid_notifier, *m_caster->GetMap(), *m_caster, radius);
+    Cell::VisitAllObjects(x, y, m_caster->GetMap(), notifier, radius);
 }
 
 void Spell::FillRaidOrPartyTargets(UnitList &targetUnitMap, Unit* member, Unit* center, float radius, bool raid, bool withPets, bool withcaster)
