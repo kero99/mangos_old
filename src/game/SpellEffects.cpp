@@ -7147,10 +7147,9 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
             }
             break;
         }
-    }
-    case SPELLFAMILY_WARRIOR:
-    {
-        switch(m_spellInfo->Id)
+        case SPELLFAMILY_WARRIOR:
+        {
+            switch(m_spellInfo->Id)
             {
                 case 64380:                                 // Shattering Throw
                 {
@@ -7164,10 +7163,9 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     unitTarget->RemoveAurasDueToSpell(10278); // Hand of Protection rank 3
                     unitTarget->RemoveAurasDueToSpell(19753); // Divine Intervention
                     unitTarget->RemoveAurasDueToSpell(45438); // Ice Block
-                    break;
                 }
+                break;
             }
-            break;
         }
     }
 

@@ -3185,7 +3185,7 @@ SpellMissInfo Unit::SpellHitResult(Unit *pVictim, SpellEntry const *spell, bool 
             return SPELL_MISS_IMMUNE;
 
         // Check for immune
-        if (pVictim->IsImmuneToDamage(GetSpellSchoolMask(spell)))
+        if (pVictim->IsImmunedToDamage(GetSpellSchoolMask(spell)))
             return SPELL_MISS_IMMUNE;
     }
 
