@@ -1927,7 +1927,7 @@ bool InstanceMap::Reset(uint8 method)
 
     if(HavePlayers())
     {
-        if(method == INSTANCE_RESET_ALL || method == INSTANCE_RESET_CHANGE_DIFFICULTY)
+        if(method == INSTANCE_RESET_ALL)
         {
             // notify the players to leave the instance so it can be reset
             for(MapRefManager::iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
