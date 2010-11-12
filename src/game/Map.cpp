@@ -1745,9 +1745,7 @@ bool InstanceMap::Add(Player *player)
                         GetInstanceSave()->GetMapId(), GetInstanceSave()->GetInstanceId(),
                         GetInstanceSave()->GetDifficulty(), GetInstanceSave()->GetPlayerCount(),
                         GetInstanceSave()->GetGroupCount(), GetInstanceSave()->CanReset());
-                    //MANGOS_ASSERT(false);
-					if (!player->isGameMaster()) player->RepopAtGraveyard();
-						return false;
+                    MANGOS_ASSERT(false);
                 }
             }
             else
@@ -1771,9 +1769,7 @@ bool InstanceMap::Add(Player *player)
                                 pGroup->GetId(),
                                 groupBind->save->GetMapId(), groupBind->save->GetInstanceId(), groupBind->save->GetDifficulty(),
                                 groupBind->save->GetPlayerCount(), groupBind->save->GetGroupCount(), groupBind->save->CanReset());
-                        //MANGOS_ASSERT(false);
-						if (!player->isGameMaster()) player->RepopAtGraveyard();
-							return false;
+                        MANGOS_ASSERT(false);
                     }
                     // bind to the group or keep using the group save
                     if (!groupBind)
@@ -1799,9 +1795,7 @@ bool InstanceMap::Add(Player *player)
                                 sLog.outError("GroupBind save players: %d, group count: %d", groupBind->save->GetPlayerCount(), groupBind->save->GetGroupCount());
                             else
                                 sLog.outError("GroupBind save NULL");
-                            //MANGOS_ASSERT(false);
-							if (!player->isGameMaster()) player->TeleportToHomebind();
-								return false;
+                            MANGOS_ASSERT(false);
                         }
                         // if the group/leader is permanently bound to the instance
                         // players also become permanently bound when they enter
@@ -1821,8 +1815,7 @@ bool InstanceMap::Add(Player *player)
                         player->BindToInstance(GetInstanceSave(), false);
                     else
                         // cannot jump to a different instance without resetting it
-                        //MANGOS_ASSERT(playerBind->save == GetInstanceSave());
-						if (!player->isGameMaster()) player->RepopAtGraveyard();
+                        MANGOS_ASSERT(playerBind->save == GetInstanceSave());
                 }
             }
         }
