@@ -825,8 +825,12 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                 // Judgement
                 else if (m_spellInfo->Id == 54158)
                 {
-                    // [1 + 0.25 * SPH + 0.16 * AP]
-                    damage += int32(m_caster->GetTotalAttackPowerValue(BASE_ATTACK) * 0.16f);
+                    // [1 + 0.27 * SPH + 0.175 * AP]
+                    float ap = m_caster->GetTotalAttackPowerValue(BASE_ATTACK);
+                    int32 holy = m_caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(m_spellInfo));
+                    if (holy < 0)
+                        holy = 0;
+                    damage += int32(ap * 0.175f) + int32(holy * 27 / 100);
                 }
                 break;
             }
@@ -1722,8 +1726,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                                 m_caster->CastSpell(m_caster, spellID, true, NULL);
                             return;
                         }
-                        case EFFECT_INDEX_1:
-                            return;                         // additional data for dummy[0]
+                        case EFFECT_INDEX_1:                // additional data for dummy[0]
+                        case EFFECT_INDEX_2:
+                            return;                         
                     }
                     return;
                 }
@@ -1771,6 +1776,33 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 {
                     // Runeforging Credit
                     m_caster->CastSpell(m_caster, 54586, true);
+                    return;
+                }
+                case 53475:                                 // Set Oracle Faction Friendly
+                case 53487:                                 // Set Wolvar Faction Honored
+                case 54015:                                 // Set Oracle Faction Honored
+                {
+                    if (m_caster->GetTypeId() != TYPEID_PLAYER)
+                        return;
+
+                    if (eff_idx == EFFECT_INDEX_0)
+                    {
+                        Player* pPlayer = (Player*)m_caster;
+
+                        uint32 faction_id = m_currentBasePoints[eff_idx];
+                        int32  rep_change = m_currentBasePoints[EFFECT_INDEX_1];
+
+                        FactionEntry const* factionEntry = sFactionStore.LookupEntry(faction_id);
+
+                        if (!factionEntry)
+                            return;
+
+                        // set rep to baserep + basepoints (expecting spillover for oposite faction -> become hated)
+                        pPlayer->GetReputationMgr().SetReputation(factionEntry, rep_change);
+
+                        // EFFECT_INDEX_2 most likely update at war state, we already handle this in SetReputation
+                    }
+
                     return;
                 }
                 case 53808:                                 // Pygmy Oil
@@ -3950,8 +3982,8 @@ void Spell::EffectOpenLock(SpellEffectIndex eff_idx)
     {
         GameObjectInfo const* goInfo = gameObjTarget->GetGOInfo();
         // Arathi Basin banner opening !
-        if (goInfo->type == GAMEOBJECT_TYPE_BUTTON && goInfo->button.noDamageImmune ||
-            goInfo->type == GAMEOBJECT_TYPE_GOOBER && goInfo->goober.losOK)
+        if ((goInfo->type == GAMEOBJECT_TYPE_BUTTON && goInfo->button.noDamageImmune) ||
+            (goInfo->type == GAMEOBJECT_TYPE_GOOBER && goInfo->goober.losOK))
         {
             //CanUseBattleGroundObject() already called in CheckCast()
             // in battleground check
@@ -4271,6 +4303,7 @@ void Spell::EffectSummonType(SpellEffectIndex eff_idx)
         {
             // TODO
             // EffectSummonVehicle(i);
+            sLog.outDebug("EffectSummonType: Unhandled summon group type SUMMON_PROP_GROUP_VEHICLE(%u)", summon_prop->Group);
             break;
         }
         default:
@@ -4662,7 +4695,7 @@ void Spell::EffectPickPocket(SpellEffectIndex /*eff_idx*/)
         {
             // Stealing successful
             //DEBUG_LOG("Sending loot from pickpocket");
-            ((Player*)m_caster)->SendLoot(unitTarget->GetGUID(),LOOT_PICKPOCKETING);
+            ((Player*)m_caster)->SendLoot(unitTarget->GetObjectGuid(),LOOT_PICKPOCKETING);
         }
         else
         {
@@ -5800,7 +5833,7 @@ void Spell::EffectInterruptCast(SpellEffectIndex eff_idx)
             // check if we can interrupt spell
             if ((curSpellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_INTERRUPT) && curSpellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE )
             {
-                unitTarget->ProhibitSpellSchool(GetSpellSchoolMask(curSpellInfo), unitTarget->CalculateSpellDuration(m_spellInfo, eff_idx, unitTarget));
+                unitTarget->ProhibitSpellSchool(GetSpellSchoolMask(curSpellInfo), unitTarget->CalculateSpellDuration(m_caster, GetSpellDuration(m_spellInfo), m_spellInfo, eff_idx));
                 unitTarget->InterruptSpell(CurrentSpellTypes(i),false);
             }
         }
@@ -6120,7 +6153,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     if (const SpellEntry *pSpell = sSpellStore.LookupEntry(m_spellInfo->CalculateSimpleValue(eff_idx)))
                     {
                         // if we used item at least once...
-                        if (pTarget->IsTemporarySummon() && pTarget->GetEntry() == pSpell->EffectMiscValue[eff_idx])
+                        if (pTarget->IsTemporarySummon() && int32(pTarget->GetEntry()) == pSpell->EffectMiscValue[eff_idx])
                         {
                             TemporarySummon* pSummon = (TemporarySummon*)pTarget;
 
@@ -7147,6 +7180,21 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
             }
             break;
         }
+        case SPELLFAMILY_WARRIOR:
+        {
+            switch(m_spellInfo->Id)
+            {
+                case 64380:                                 // Shattering Throw
+                {
+                    if (!unitTarget || !unitTarget->isAlive())
+                        return;
+                    // remove immunity effects
+                    m_caster->CastSpell(unitTarget, 39897, true);
+                    break;
+                }
+            }
+            break;
+        }
     }
 
     // normal DB scripted effect
@@ -7510,7 +7558,7 @@ void Spell::EffectDisEnchant(SpellEffectIndex /*eff_idx*/)
 
     p_caster->UpdateCraftSkill(m_spellInfo->Id);
 
-    ((Player*)m_caster)->SendLoot(itemTarget->GetGUID(),LOOT_DISENCHANTING);
+    ((Player*)m_caster)->SendLoot(itemTarget->GetObjectGuid(),LOOT_DISENCHANTING);
 
     // item will be removed at disenchanting end
 }
@@ -7877,7 +7925,7 @@ void Spell::EffectSkinning(SpellEffectIndex /*eff_idx*/)
 
     uint32 skill = creature->GetCreatureInfo()->GetRequiredLootSkill();
 
-    ((Player*)m_caster)->SendLoot(creature->GetGUID(),LOOT_SKINNING);
+    ((Player*)m_caster)->SendLoot(creature->GetObjectGuid(),LOOT_SKINNING);
     creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
 
     int32 reqValue = targetLevel < 10 ? 0 : targetLevel < 20 ? (targetLevel-10)*10 : targetLevel*5;
@@ -8324,15 +8372,10 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
 
 void Spell::EffectProspecting(SpellEffectIndex /*eff_idx*/)
 {
-    if (m_caster->GetTypeId() != TYPEID_PLAYER)
+    if (m_caster->GetTypeId() != TYPEID_PLAYER || !itemTarget)
         return;
 
     Player* p_caster = (Player*)m_caster;
-    if (!itemTarget || !(itemTarget->GetProto()->Flags & ITEM_FLAG_PROSPECTABLE))
-        return;
-
-    if (itemTarget->GetCount() < 5)
-        return;
 
     if (sWorld.getConfig(CONFIG_BOOL_SKILL_PROSPECTING))
     {
@@ -8346,15 +8389,10 @@ void Spell::EffectProspecting(SpellEffectIndex /*eff_idx*/)
 
 void Spell::EffectMilling(SpellEffectIndex /*eff_idx*/)
 {
-    if(m_caster->GetTypeId() != TYPEID_PLAYER)
+    if (m_caster->GetTypeId() != TYPEID_PLAYER || !itemTarget)
         return;
 
     Player* p_caster = (Player*)m_caster;
-    if (!itemTarget || !(itemTarget->GetProto()->Flags & ITEM_FLAG_MILLABLE))
-        return;
-
-    if(itemTarget->GetCount() < 5)
-        return;
 
     if( sWorld.getConfig(CONFIG_BOOL_SKILL_MILLING))
     {
@@ -8363,7 +8401,7 @@ void Spell::EffectMilling(SpellEffectIndex /*eff_idx*/)
         p_caster->UpdateGatherSkill(SKILL_INSCRIPTION, SkillValue, reqSkillValue);
     }
 
-    ((Player*)m_caster)->SendLoot(itemTarget->GetGUID(), LOOT_MILLING);
+    ((Player*)m_caster)->SendLoot(itemTarget->GetObjectGuid(), LOOT_MILLING);
 }
 
 void Spell::EffectSkill(SpellEffectIndex /*eff_idx*/)

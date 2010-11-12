@@ -207,8 +207,8 @@ bool Creature::InitEntry(uint32 Entry, uint32 team, const CreatureData *data )
     // difficulties for dungeons/battleground ordered in normal way
     // and if more high version not exist must be used lesser version
     // for raid order different:
-    // 10 man normal version must be used instead not existed 10 man heroic version
-    // 25 man normal version must be used instead not existed 25 man heroic version
+    // 10 man normal version must be used instead nonexistent 10 man heroic version
+    // 25 man normal version must be used instead nonexistent 25 man heroic version
     CreatureInfo const *cinfo = normalInfo;
     for (uint8 diff = uint8(GetMap()->GetDifficulty()); diff > 0;)
     {
@@ -556,7 +556,7 @@ void Creature::Update(uint32 diff)
             m_regenTimer = REGEN_TIME_FULL;
             break;
         }
-        case DEAD_FALLING:
+        case CORPSE_FALLING:
         {
             SetDeathState(CORPSE);
         }
@@ -845,7 +845,7 @@ void Creature::PrepareBodyLootState()
             // have normal loot
             if (GetCreatureInfo()->maxgold > 0 || GetCreatureInfo()->lootid ||
                 // ... or can have skinning after
-                GetCreatureInfo()->SkinLootId && sWorld.getConfig(CONFIG_BOOL_CORPSE_EMPTY_LOOT_SHOW))
+                (GetCreatureInfo()->SkinLootId && sWorld.getConfig(CONFIG_BOOL_CORPSE_EMPTY_LOOT_SHOW)))
             {
                 SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
                 return;
@@ -1327,7 +1327,7 @@ void Creature::SetDeathState(DeathState s)
             UpdateSpeed(MOVE_RUN, false);
         }
 
-        // return, since we promote to DEAD_FALLING. DEAD_FALLING is promoted to CORPSE at next update.
+        // return, since we promote to CORPSE_FALLING. CORPSE_FALLING is promoted to CORPSE at next update.
         if (CanFly() && FallGround())
             return;
 
@@ -1353,7 +1353,7 @@ void Creature::SetDeathState(DeathState s)
 
 bool Creature::FallGround()
 {
-    // Only if state is JUST_DIED. DEAD_FALLING is set below and promoted to CORPSE later
+    // Only if state is JUST_DIED. CORPSE_FALLING is set below and promoted to CORPSE later
     if (getDeathState() != JUST_DIED)
         return false;
 
@@ -1370,7 +1370,7 @@ bool Creature::FallGround()
     if (fabs(GetPositionZ() - tz) < 0.1f)
         return false;
 
-    Unit::SetDeathState(DEAD_FALLING);
+    Unit::SetDeathState(CORPSE_FALLING);
 
     float dz = tz - GetPositionZ();
     float distance = sqrt(dz*dz);
@@ -1405,7 +1405,7 @@ void Creature::Respawn()
     SetVisibility(currentVis);                              // restore visibility state
     UpdateObjectVisibility();
 
-    if(getDeathState() == DEAD)
+    if (IsDespawned())
     {
         if (m_DBTableGuid)
             sObjectMgr.SaveCreatureRespawnTime(m_DBTableGuid,GetInstanceId(), 0);
