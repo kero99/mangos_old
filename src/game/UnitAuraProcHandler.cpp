@@ -383,7 +383,7 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit *pVictim, SpellAuraHolder* holder, S
         if (!allow)
             return false;
     }
-    // Aura added by spell can`t trogger from self (prevent drop charges/do triggers)
+    // Aura added by spell can`t trigger from self (prevent drop charges/do triggers)
     // But except periodic triggers (can triggered from self)
     if(procSpell && procSpell->Id == spellProto->Id && !(spellProto->procFlags & PROC_FLAG_ON_TAKE_PERIODIC))
         return false;
@@ -423,7 +423,7 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit *pVictim, SpellAuraHolder* holder, S
         uint32 WeaponSpeed = GetAttackTime(attType);
         chance = GetPPMProcChance(WeaponSpeed, spellProcEvent->ppmRate);
     }
-    // Apply chance modifer aura
+    // Apply chance modifier aura
     if(Player* modOwner = GetSpellModOwner())
     {
         modOwner->ApplySpellMod(spellProto->Id,SPELLMOD_CHANCE_OF_SUCCESS,chance);
@@ -1187,7 +1187,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
                     mod->m_amount *=2;
                     if (mod->m_amount < 100) // not enough
                         return SPELL_AURA_PROC_OK;
-                    // Crititcal counted -> roll chance
+                    // Critical counted -> roll chance
                     if (roll_chance_i(triggerAmount))
                         CastSpell(this, 48108, true, castItem, triggeredByAura);
                 }
@@ -1742,10 +1742,46 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
                     triggered_spell_id = 54755;
                     break;
                 }
+                // Glyph of Shred
+                case 54815:
+                {
+                    // try to find spell Rip on the target
+                    if (Aura* aura = target->GetAura(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_DRUID, UI64LIT(0x00800000), 0, GetGUID()))
+                    {
+                        // Rip's max duration, note: spells which modifies Rip's duration also counted like Glyph of Rip
+                        uint32 countMin = aura->GetAuraMaxDuration();
+
+                        // just Rip's max duration without other spells
+                        uint32 countMax = GetSpellMaxDuration(aura->GetSpellProto());
+
+                        // add possible auras and Glyph of Shred's max duration
+                        countMax += 3 * triggerAmount * 1000;       // Glyph of Shred               -> +6 seconds
+                        countMax += HasAura(54818) ? 4 * 1000 : 0;  // Glyph of Rip                 -> +4 seconds
+                        countMax += HasAura(60141) ? 4 * 1000 : 0;  // Rip Duration/Lacerate Damage -> +4 seconds
+
+                        // if min < max -> that means caster didn't cast 3 shred yet
+                        // so set Rip's duration and max duration
+                        if (countMin < countMax)
+                        {
+                            aura->SetAuraDuration(aura->GetAuraDuration() + triggerAmount * 1000);
+                            aura->SetAuraMaxDuration(countMin + triggerAmount * 1000);
+                            aura->GetHolder()->SendAuraUpdate(false);
+                            return SPELL_AURA_PROC_OK;
+                        }
+                    }
+                    // if not found Rip
+                    return SPELL_AURA_PROC_FAILED;
+                }
                 // Glyph of Rake
                 case 54821:
                 {
                     triggered_spell_id = 54820;
+                    break;
+                }
+                // Glyph of Starfire
+                case 54845:
+                {
+                    triggered_spell_id = 54846;
                     break;
                 }
                 // Item - Druid T10 Restoration 4P Bonus (Rejuvenation)
@@ -1846,6 +1882,26 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
 
                     triggered_spell_id = 32747;
                     break;
+                }
+                // Glyph of Backstab
+                case 56800:
+                {
+                    if (Aura* aura = target->GetAura(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_ROGUE, UI64LIT(0x00100000), 0, GetGUID()))
+                    {
+                        uint32 countMin = aura->GetAuraMaxDuration();
+                        uint32 countMax = GetSpellMaxDuration(aura->GetSpellProto());
+                        countMax += 3 * triggerAmount * 1000;
+                        countMax += HasAura(56801) ? 4000 : 0;
+
+                        if (countMin < countMax)
+                        {
+                            aura->SetAuraDuration(aura->GetAuraDuration() + triggerAmount * 1000);
+                            aura->SetAuraMaxDuration(countMin + triggerAmount * 1000);
+                            aura->GetHolder()->SendAuraUpdate(false);
+                            return SPELL_AURA_PROC_OK;
+                        }
+                    }
+                    return SPELL_AURA_PROC_FAILED;
                 }
                 // Tricks of the trade
                 case 57934:
@@ -3159,7 +3215,7 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit *pVictim, uint32 d
             }
             break;
         case SPELLFAMILY_WARRIOR:
-            // Deep Wounds (replace triggered spells to directly apply DoT), dot spell have finilyflags
+            // Deep Wounds (replace triggered spells to directly apply DoT), dot spell have familyflags
             if (auraSpellInfo->SpellFamilyFlags == UI64LIT(0x0) && auraSpellInfo->SpellIconID == 243)
             {
                 float weaponDamage;
