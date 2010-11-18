@@ -523,9 +523,6 @@ void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
         {
             if (!plMover->m_transport)
             {
-                float trans_rad = movementInfo.GetTransportPos()->x*movementInfo.GetTransportPos()->x + movementInfo.GetTransportPos()->y*movementInfo.GetTransportPos()->y + movementInfo.GetTransportPos()->z*movementInfo.GetTransportPos()->z;
-                if (trans_rad > 3600.0f) // transport radius = 60 yards //cheater with on_transport_flag
-  	                return;
                 // elevators also cause the client to send MOVEFLAG_ONTRANSPORT - just unmount if the guid can be found in the transport list
                 for (MapManager::TransportSet::const_iterator iter = sMapMgr.m_Transports.begin(); iter != sMapMgr.m_Transports.end(); ++iter)
                 {
@@ -543,10 +540,6 @@ void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
             plMover->m_transport->RemovePassenger(plMover);
             plMover->m_transport = NULL;
             movementInfo.ClearTransportData();
-        }
-        if(plMover->GetTerrain()->IsUnderWater(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z-7.0f))
-        {
-            plMover->m_anti_BeginFallZ=INVALID_HEIGHT;
         }
 
         if (movementInfo.HasMovementFlag(MOVEFLAG_SWIMMING) != plMover->IsInWater())
