@@ -3744,6 +3744,7 @@ void Aura::HandleModCharm(bool apply, bool Real)
         {
             target->RemoveSpellsCausingAura(SPELL_AURA_MOD_CHARM);
             target->RemoveSpellsCausingAura(SPELL_AURA_MOD_POSSESS);
+            target->RemoveSpellsCausingAura(SPELL_AURA_MOD_POSSESS_PET);
         }
 
         target->SetCharmerGuid(GetCasterGuid());
